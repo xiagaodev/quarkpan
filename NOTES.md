@@ -27,7 +27,7 @@ cookie_str = '; '.join(f'{k}={v}' for k, v in client.cookies.items())
 
 ### Cookie 存储
 - 有效期间可重复使用，无需每次重新扫码
-- 存储路径：`/tmp/quark_new_cookies.txt`（不纳入 Git）
+- 存储路径：`config/cookies.txt`（不纳入 Git）
 - 格式：标准 Cookie 字符串，`key=value; key=value...`
 
 ---
@@ -59,20 +59,40 @@ client.upload_file('/path/to/file.pdf', parent_folder_id='目标文件夹fid')
 
 ---
 
-## 3. 目录结构上传流程
+## 3. 批量上传脚本
 
-### 保持目录结构的标准做法
-1. **创建子文件夹**（用 `client.create_folder(name, parent_fid)`）
-2. **查询新建文件夹的 fid**（从 `create_folder` 返回或 `list_files` 重新获取）
-3. **将文件上传到对应子文件夹 fid**
+使用通用上传脚本 `upload.py`：
 
-⚠️ 踩坑：先批量创建文件夹，再上传文件时，必须**重新查询**获取新建文件夹的 fid，`create_folder` 返回的 fid 可能为空。
+```bash
+# 平铺上传（所有 PDF 直接进目标文件夹）
+python3 upload.py <源目录> --target <目标fid>
 
-### 批量删除文件
-```python
-# 用 delete_files（批量）而不是 delete_file（单个）
-client.files.delete_files([fid1, fid2, ...])
+# 保持一级目录结构上传
+python3 upload.py <源目录> --target <目标fid> --keep-structure
+
+# 指定子目录作为结构根目录
+python3 upload.py <源目录> --target <目标fid> --keep-structure --structure-from printkids
+
+# 调整并行数（默认4）
+python3 upload.py <源目录> --target <目标fid> --workers 6
+
+# 指定 Cookie 文件
+python3 upload.py <源目录> --target <目标fid> --cookie config/cookies.txt
 ```
+
+### 参数说明
+
+| 参数 | 说明 |
+|------|------|
+| `source_dir` | 源目录（任意包含 PDF 的目录） |
+| `--target` | 夸克网盘目标文件夹 fid（必填） |
+| `--keep-structure` | 以源目录的顶层子文件夹分组上传，不会深挖嵌套目录 |
+| `--structure-from` | 指定子目录作为结构根目录 |
+| `--workers` | 并行上传数，默认 4 |
+| `--cookie` | Cookie 文件路径，默认 `config/cookies.txt` |
+
+### 同名冲突处理
+脚本会自动检测文件夹是否已存在——若创建时遇到同名冲突，会自动重新查询已有文件夹的 fid，不会重复创建。
 
 ---
 
@@ -86,13 +106,14 @@ client.files.delete_files([fid1, fid2, ...])
 
 ## 5. Git 管理
 
-### .gitignore 关键项
 ```
+# .gitignore
 downloads/           # 原始 PDF 文件（太大）
 quark_env/           # Python 虚拟环境
-__pycache__/         # 编译缓存
 config/              # 配置文件（含 cookie）
-*.py                 # 测试/上传脚本（按需）
+*.pyc
+__pycache__/
+*.log
 ```
 
 ### 仓库地址
@@ -104,17 +125,27 @@ https://github.com/xiagaodev/quarkpan
 
 ## 6. 项目结构
 ```
-quarkpan/
-├── quark_client/      # 夸克网盘 Python SDK（基于 lich0821/QuarkPan）
+~/projects/netdisk-promotion/xianyu/
+├── upload.py              # 通用批量上传脚本
+├── downloader.py          # PDF 下载脚本
+├── quark_client/          # 夸克网盘 Python SDK（基于 lich0821/QuarkPan）
 │   ├── auth/
-│   │   └── api_login.py      # 二维码登录（含修复）
-│   ├── services/
-│   │   └── file_upload_service.py  # 文件上传（含修复）
-│   └── ...
-├── downloads/         # 待上传的 PDF 资源（不纳入 Git）
-├── batch_upload.py           # 批量上传脚本（平铺）
-├── batch_upload_structured.py # 批量上传脚本（保持结构）
-└── NOTES.md           # 本文档
+│   │   └── api_login.py           # 二维码登录（含修复）
+│   └── services/
+│       └── file_upload_service.py  # 文件上传（含修复）
+├── config/
+│   └── cookies.txt        # 登录 Cookie（不纳入 Git）
+├── downloads/             # 待上传的 PDF 资源（不纳入 Git）
+├── quark_env/             # Python 虚拟环境（不纳入 Git）
+├── urls.json              # 资源 URL 列表
+└── NOTES.md               # 本文档
+```
+
+### 工作区根目录
+```
+~/projects/netdisk-promotion/
+├── xianyu/                # 闲鱼资源项目（夸克网盘）
+└── ...其他网盘推广项目
 ```
 
 ---
