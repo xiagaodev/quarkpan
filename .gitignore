@@ -27,3 +27,5 @@ quark_qr_login.py
 # IDE
 .vscode/
 .idea/
+batch_upload.py
+batch_upload_structured.py
