@@ -1,0 +1,29 @@
+# 依赖环境
+quark_env/
+__pycache__/
+*.pyc
+*.pyo
+
+# 下载的文件
+downloads/
+
+# 配置（包含 cookie 等敏感信息）
+config/
+
+# 临时文件
+*.log
+*.tmp
+*.swp
+
+# 测试脚本（留在本地）
+test_upload.py
+xlib_upload.py
+upload_folder.py
+upload_to_quark.py
+quark_api_uploader.py
+get_qr.py
+quark_qr_login.py
+
+# IDE
+.vscode/
+.idea/
